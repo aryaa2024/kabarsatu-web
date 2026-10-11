@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <meta name="theme-color" content="#0F172A" />
+    <meta name="description" content="KabarSatu — Unified Feed Berita Nasional & Medsos Publik. Semua Kabar, Satu Tujuan." />
+    
+    <!-- Open Graph / Meta -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="KabarSatu — Semua Kabar, Satu Tujuan" />
+    <meta property="og:description" content="PWA Web Aggregator Berita Nasional & Media Sosial Terpadu." />
+    <meta property="og:image" content="/logo.png" />
+    
+    <!-- PWA Manifest & Icons -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+
+    <title>KabarSatu — Semua Kabar, Satu Tujuan</title>
+  </head>
+  <body class="bg-slateDark text-offWhite min-h-screen selection:bg-electricBlue selection:text-white antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // PWA Service Worker Registration
+      if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(err => {
+            console.log('SW registration note:', err);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
