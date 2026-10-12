@@ -1,10 +1,11 @@
 /**
  * Audio Service for KabarSatu
- * Generates a pleasant futuristic chime using Web Audio API synthesis
- * with an optional fallback to /sounds/intro.mp3 if available.
+ * Plays the user's custom intro audio (/sounds/intro.mp3) with crystal clarity
+ * and provides synthetic chime fallback if required.
  */
 
 class AudioService {
+  private currentAudio: HTMLAudioElement | null = null;
   private audioCtx: AudioContext | null = null;
 
   private getAudioContext(): AudioContext | null {
@@ -19,70 +20,97 @@ class AudioService {
   }
 
   /**
-   * Plays a futuristic, calm, crystal-clear chime using Web Audio API synthesis.
-   * Chords: F4 -> A4 -> C5 -> E5 (Lush Modern Ambient sound)
+   * Plays the intro audio (User's custom sound first: /sounds/intro.mp3 or /intro.mp3)
    */
-  public async playFuturisticChime(): Promise<void> {
+  public async playFuturisticChime(): Promise<boolean> {
     try {
-      // First attempt to play static mp3 file if it exists
-      const hasAudioFile = await this.tryPlayAudioFile('/sounds/intro.mp3');
-      if (hasAudioFile) return;
+      // 1. Try user's custom audio file from /sounds/intro.mp3
+      const playedSoundsPath = await this.tryPlayAudioFile('/sounds/intro.mp3');
+      if (playedSoundsPath) return true;
 
-      const ctx = this.getAudioContext();
-      if (!ctx) return;
+      // 2. Try fallback path /intro.mp3
+      const playedRootPath = await this.tryPlayAudioFile('/intro.mp3');
+      if (playedRootPath) return true;
 
-      if (ctx.state === 'suspended') {
-        await ctx.resume().catch(() => {});
-      }
-
-      const now = ctx.currentTime;
-      // High-tech chord: D5 (587.33Hz), F#5 (739.99Hz), A5 (880Hz), D6 (1174.66Hz)
-      const notes = [
-        { freq: 440.00, delay: 0.00, duration: 1.4 },  // A4
-        { freq: 554.37, delay: 0.08, duration: 1.5 },  // C#5
-        { freq: 659.25, delay: 0.16, duration: 1.6 },  // E5
-        { freq: 880.00, delay: 0.24, duration: 1.8 },  // A5
-        { freq: 1108.73, delay: 0.32, duration: 2.0 }, // C#6
-      ];
-
-      // Master gain for warmth and gentleness
-      const masterGain = ctx.createGain();
-      masterGain.gain.setValueAtTime(0.18, now);
-      masterGain.connect(ctx.destination);
-
-      notes.forEach(({ freq, delay, duration }) => {
-        const osc = ctx.createOscillator();
-        const noteGain = ctx.createGain();
-
-        // Blend sine with gentle triangle for tech-modern warmth
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + delay);
-
-        // Exponential decay envelope
-        noteGain.gain.setValueAtTime(0.0001, now + delay);
-        noteGain.gain.exponentialRampToValueAtTime(0.4, now + delay + 0.05);
-        noteGain.gain.exponentialRampToValueAtTime(0.0001, now + delay + duration);
-
-        osc.connect(noteGain);
-        noteGain.connect(masterGain);
-
-        osc.start(now + delay);
-        osc.stop(now + delay + duration);
-      });
+      // 3. Fallback to Web Audio API synthesizer
+      await this.playSyntheticChime();
+      return true;
     } catch (err) {
-      console.log('Audio chime auto-play info:', err);
+      console.log('Audio playback info:', err);
+      return false;
     }
   }
 
-  private async tryPlayAudioFile(url: string): Promise<boolean> {
-    try {
-      const audio = new Audio(url);
-      audio.volume = 0.4;
-      await audio.play();
-      return true;
-    } catch {
-      return false; // Fallback to synth chime
+  /**
+   * Directly plays the user's uploaded MP3 audio file
+   */
+  public tryPlayAudioFile(url: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      try {
+        if (this.currentAudio) {
+          this.currentAudio.pause();
+          this.currentAudio.currentTime = 0;
+        }
+
+        const audio = new Audio(url);
+        audio.volume = 1.0; // Clear full volume for user's voice/audio
+        this.currentAudio = audio;
+
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => resolve(true))
+            .catch(() => resolve(false));
+        } else {
+          resolve(true);
+        }
+      } catch {
+        resolve(false);
+      }
+    });
+  }
+
+  /**
+   * Ambient synthesizer fallback
+   */
+  public async playSyntheticChime(): Promise<void> {
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+
+    if (ctx.state === 'suspended') {
+      await ctx.resume().catch(() => {});
     }
+
+    const now = ctx.currentTime;
+    const notes = [
+      { freq: 440.00, delay: 0.00, duration: 1.4 },  // A4
+      { freq: 554.37, delay: 0.08, duration: 1.5 },  // C#5
+      { freq: 659.25, delay: 0.16, duration: 1.6 },  // E5
+      { freq: 880.00, delay: 0.24, duration: 1.8 },  // A5
+      { freq: 1108.73, delay: 0.32, duration: 2.0 }, // C#6
+    ];
+
+    const masterGain = ctx.createGain();
+    masterGain.gain.setValueAtTime(0.25, now);
+    masterGain.connect(ctx.destination);
+
+    notes.forEach(({ freq, delay, duration }) => {
+      const osc = ctx.createOscillator();
+      const noteGain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + delay);
+
+      noteGain.gain.setValueAtTime(0.0001, now + delay);
+      noteGain.gain.exponentialRampToValueAtTime(0.4, now + delay + 0.05);
+      noteGain.gain.exponentialRampToValueAtTime(0.0001, now + delay + duration);
+
+      osc.connect(noteGain);
+      noteGain.connect(masterGain);
+
+      osc.start(now + delay);
+      osc.stop(now + delay + duration);
+    });
   }
 }
 

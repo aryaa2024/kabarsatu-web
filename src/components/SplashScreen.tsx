@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { audioService } from '../services/audioService';
-import { Volume2, Sparkles, UserCheck } from 'lucide-react';
+import { Volume2, Sparkles, UserCheck, Play } from 'lucide-react';
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -11,39 +11,47 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
   const [soundPlayed, setSoundPlayed] = useState(false);
 
   useEffect(() => {
-    // Attempt audio chime immediately on mount
+    // Attempt audio playback immediately on load
     const playIntro = async () => {
       try {
-        await audioService.playFuturisticChime();
-        setSoundPlayed(true);
+        const played = await audioService.playFuturisticChime();
+        if (played) setSoundPlayed(true);
       } catch (err) {
-        console.log('Intro chime awaiting user gesture:', err);
+        console.log('Intro sound waiting for user gesture:', err);
       }
     };
     playIntro();
 
-    // Fade out sequence after 1.8s
+    // Smooth exit sequence after 2.4s to let the intro voiceover finish
     const timer = setTimeout(() => {
       setFadingOut(true);
       const exitTimer = setTimeout(() => {
         onComplete();
       }, 500); // 500ms fade transition
       return () => clearTimeout(exitTimer);
-    }, 1800);
+    }, 2400);
 
     return () => clearTimeout(timer);
   }, [onComplete]);
 
-  const handleManualPlayChime = (e: React.MouseEvent) => {
+  const handleManualPlay = (e: React.MouseEvent) => {
     e.stopPropagation();
     audioService.playFuturisticChime();
     setSoundPlayed(true);
   };
 
+  const handleScreenClick = () => {
+    // If sound hasn't played due to browser autoplay restriction, play it on user click
+    if (!soundPlayed) {
+      audioService.playFuturisticChime();
+    }
+    onComplete();
+  };
+
   return (
     <div
-      onClick={onComplete}
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-slateDark cursor-pointer transition-opacity duration-500 ${
+      onClick={handleScreenClick}
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-slateDark cursor-pointer transition-opacity duration-500 select-none ${
         fadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
@@ -95,21 +103,21 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
 
         {/* Subtle Tech Loading Bar */}
         <div className="w-44 h-1 bg-subtleGray rounded-full mt-6 overflow-hidden">
-          <div className="w-full h-full bg-gradient-to-r from-electricBlue to-cyan-400 origin-left animate-[slideUp_1.8s_ease-in-out_infinite]" />
+          <div className="w-full h-full bg-gradient-to-r from-electricBlue to-cyan-400 origin-left animate-[slideUp_2.4s_ease-in-out_infinite]" />
         </div>
 
-        {/* Chime Hint / Tap to Enter */}
+        {/* Audio Status & Interactive Hint */}
         <div className="mt-7 flex items-center gap-3 text-xs text-slateGray/80">
           <button
-            onClick={handleManualPlayChime}
-            title="Putar Suara Intro"
-            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-darkCharcoal border border-subtleGray hover:text-offWhite hover:border-electricBlue transition-colors active:scale-95"
+            onClick={handleManualPlay}
+            title="Dengarkan Suara Intro Buatan Anda"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-darkCharcoal border border-subtleGray hover:text-offWhite hover:border-electricBlue transition-all active:scale-95 shadow-sm"
           >
-            <Volume2 className={`w-3.5 h-3.5 ${soundPlayed ? 'text-electricBlue' : 'text-slateGray'}`} />
-            <span>{soundPlayed ? 'Chime Aktif' : 'Tes Audio'}</span>
+            <Volume2 className={`w-3.5 h-3.5 ${soundPlayed ? 'text-electricBlue animate-pulse' : 'text-slateGray'}`} />
+            <span className="font-medium">{soundPlayed ? 'Suara Intro Diputar 🔊' : 'Putar Suara Intro ▶'}</span>
           </button>
           <span>•</span>
-          <span className="hover:text-offWhite transition-colors">Klik layar untuk masuk</span>
+          <span className="hover:text-offWhite transition-colors">Klik untuk masuk</span>
         </div>
       </div>
     </div>
