@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { audioService } from '../services/audioService';
-import { Volume2, Sparkles } from 'lucide-react';
+import { Volume2, Sparkles, UserCheck } from 'lucide-react';
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -11,7 +11,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
   const [soundPlayed, setSoundPlayed] = useState(false);
 
   useEffect(() => {
-    // Attempt audio chime immediately
+    // Attempt audio chime immediately on mount
     const playIntro = async () => {
       try {
         await audioService.playFuturisticChime();
@@ -62,7 +62,6 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
               alt="Logo KabarSatu"
               className="w-full h-full object-contain filter drop-shadow animate-fade-in"
               onError={(e) => {
-                // Fallback SVG if image not found
                 e.currentTarget.style.display = 'none';
                 const parent = e.currentTarget.parentElement;
                 if (parent) {
@@ -88,23 +87,29 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
           <Sparkles className="w-4 h-4 text-electricBlue animate-pulse" />
         </p>
 
+        {/* Creator Identity / Branding in Splash Screen */}
+        <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slateDark/70 border border-subtleGray/60 text-[11px] text-slateGray font-medium">
+          <UserCheck className="w-3 h-3 text-electricBlue" />
+          <span>Created by <strong className="text-offWhite">Muhammad Arya</strong></span>
+        </div>
+
         {/* Subtle Tech Loading Bar */}
-        <div className="w-40 h-1 bg-subtleGray rounded-full mt-7 overflow-hidden">
+        <div className="w-44 h-1 bg-subtleGray rounded-full mt-6 overflow-hidden">
           <div className="w-full h-full bg-gradient-to-r from-electricBlue to-cyan-400 origin-left animate-[slideUp_1.8s_ease-in-out_infinite]" />
         </div>
 
         {/* Chime Hint / Tap to Enter */}
-        <div className="mt-8 flex items-center gap-3 text-xs text-slateGray/80">
+        <div className="mt-7 flex items-center gap-3 text-xs text-slateGray/80">
           <button
             onClick={handleManualPlayChime}
             title="Putar Suara Intro"
-            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-darkCharcoal border border-subtleGray hover:text-offWhite hover:border-electricBlue transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-darkCharcoal border border-subtleGray hover:text-offWhite hover:border-electricBlue transition-colors active:scale-95"
           >
             <Volume2 className={`w-3.5 h-3.5 ${soundPlayed ? 'text-electricBlue' : 'text-slateGray'}`} />
             <span>{soundPlayed ? 'Chime Aktif' : 'Tes Audio'}</span>
           </button>
           <span>•</span>
-          <span className="hover:text-offWhite transition-colors">Klik untuk lewati</span>
+          <span className="hover:text-offWhite transition-colors">Klik layar untuk masuk</span>
         </div>
       </div>
     </div>

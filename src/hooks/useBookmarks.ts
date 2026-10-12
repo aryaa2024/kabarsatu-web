@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { FeedItem } from '../types/feed';
 
-const STORAGE_KEY = 'kabarsatu_bookmarks_v1';
+const STORAGE_KEY = 'kabarsatu_bookmarks_v2';
 
 export function useBookmarks(allFeeds: FeedItem[]) {
-  const [bookmarkedIds, setBookmarkedIds] = useState<string[]>(() => {
+  // Store full bookmarked feed items in localStorage for 100% data persistence
+  const [bookmarkedItems, setBookmarkedItems] = useState<FeedItem[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       return saved ? JSON.parse(saved) : [];
@@ -15,26 +16,40 @@ export function useBookmarks(allFeeds: FeedItem[]) {
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(bookmarkedIds));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(bookmarkedItems));
     } catch (e) {
       console.error('Failed saving bookmarks to localStorage', e);
     }
-  }, [bookmarkedIds]);
+  }, [bookmarkedItems]);
 
-  const toggleBookmark = (id: string) => {
-    setBookmarkedIds(prev => 
-      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-    );
+  const toggleBookmark = (item: FeedItem) => {
+    setBookmarkedItems(prev => {
+      const exists = prev.some(b => b.id === item.id);
+      if (exists) {
+        return prev.filter(b => b.id !== item.id);
+      } else {
+        return [item, ...prev];
+      }
+    });
   };
 
-  const isBookmarked = (id: string) => bookmarkedIds.includes(id);
+  const removeBookmark = (id: string) => {
+    setBookmarkedItems(prev => prev.filter(b => b.id !== id));
+  };
 
-  const bookmarkedItems = allFeeds.filter(feed => bookmarkedIds.includes(feed.id));
+  const clearAllBookmarks = () => {
+    setBookmarkedItems([]);
+  };
+
+  const isBookmarked = (id: string) => {
+    return bookmarkedItems.some(b => b.id === id);
+  };
 
   return {
-    bookmarkedIds,
     bookmarkedItems,
     toggleBookmark,
+    removeBookmark,
+    clearAllBookmarks,
     isBookmarked
   };
 }

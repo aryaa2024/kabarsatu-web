@@ -6,15 +6,15 @@ export async function getAggregatedFeeds(): Promise<FeedItem[]> {
   try {
     const liveItems = await fetchAllLiveRss();
     if (liveItems && liveItems.length > 0) {
-      // Merge live news with seed YouTube, Medsos, and Tren
-      const nonBeritaSeed = SEED_FEEDS.filter(item => item.category !== 'berita');
-      const seedBerita = SEED_FEEDS.filter(item => item.category === 'berita');
+      // De-duplicate by title
+      const existingTitles = new Set(liveItems.map(item => item.title.toLowerCase().trim()));
+      const filteredSeed = SEED_FEEDS.filter(item => !existingTitles.has(item.title.toLowerCase().trim()));
       
-      // Combine live items with seed, ensuring all sources are well represented
-      return [...liveItems, ...nonBeritaSeed, ...seedBerita.slice(0, 5)];
+      // Combine live items with non-duplicated seed items
+      return [...liveItems, ...filteredSeed];
     }
   } catch (err) {
-    console.log('Using robust seed feed data:', err);
+    console.log('Using robust curated seed data:', err);
   }
 
   // Fallback to complete seed dataset
@@ -33,14 +33,15 @@ export function filterFeeds(
     result = result.filter(item => item.category === category);
   }
 
-  // Search keyword filter
+  // Search keyword filter across title, content, author, source, and badge
   if (searchQuery.trim()) {
     const query = searchQuery.toLowerCase().trim();
     result = result.filter(item => 
       item.title.toLowerCase().includes(query) ||
       item.content.toLowerCase().includes(query) ||
       item.source.toLowerCase().includes(query) ||
-      item.author.toLowerCase().includes(query)
+      item.author.toLowerCase().includes(query) ||
+      (item.badge && item.badge.toLowerCase().includes(query))
     );
   }
 
