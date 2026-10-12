@@ -1,12 +1,36 @@
 /**
  * Audio Service for KabarSatu
  * Plays the user's custom intro audio (/sounds/intro.mp3) with crystal clarity
- * and provides synthetic chime fallback if required.
+ * and handles browser autoplay restrictions gracefully.
  */
 
 class AudioService {
   private currentAudio: HTMLAudioElement | null = null;
   private audioCtx: AudioContext | null = null;
+  private hasPlayedIntro = false;
+  private gestureListenerAttached = false;
+
+  constructor() {
+    this.setupAutoplayUnlock();
+  }
+
+  private setupAutoplayUnlock() {
+    if (typeof window === 'undefined') return;
+
+    const unlockOnGesture = () => {
+      if (!this.hasPlayedIntro) {
+        this.playFuturisticChime();
+      }
+      window.removeEventListener('pointerdown', unlockOnGesture);
+      window.removeEventListener('keydown', unlockOnGesture);
+    };
+
+    if (!this.gestureListenerAttached) {
+      window.addEventListener('pointerdown', unlockOnGesture, { once: true });
+      window.addEventListener('keydown', unlockOnGesture, { once: true });
+      this.gestureListenerAttached = true;
+    }
+  }
 
   private getAudioContext(): AudioContext | null {
     if (typeof window === 'undefined') return null;
@@ -26,17 +50,24 @@ class AudioService {
     try {
       // 1. Try user's custom audio file from /sounds/intro.mp3
       const playedSoundsPath = await this.tryPlayAudioFile('/sounds/intro.mp3');
-      if (playedSoundsPath) return true;
+      if (playedSoundsPath) {
+        this.hasPlayedIntro = true;
+        return true;
+      }
 
       // 2. Try fallback path /intro.mp3
       const playedRootPath = await this.tryPlayAudioFile('/intro.mp3');
-      if (playedRootPath) return true;
+      if (playedRootPath) {
+        this.hasPlayedIntro = true;
+        return true;
+      }
 
       // 3. Fallback to Web Audio API synthesizer
       await this.playSyntheticChime();
+      this.hasPlayedIntro = true;
       return true;
     } catch (err) {
-      console.log('Audio playback info:', err);
+      console.log('Audio playback waiting for gesture:', err);
       return false;
     }
   }
@@ -53,7 +84,7 @@ class AudioService {
         }
 
         const audio = new Audio(url);
-        audio.volume = 1.0; // Clear full volume for user's voice/audio
+        audio.volume = 1.0;
         this.currentAudio = audio;
 
         const playPromise = audio.play();
@@ -83,11 +114,11 @@ class AudioService {
 
     const now = ctx.currentTime;
     const notes = [
-      { freq: 440.00, delay: 0.00, duration: 1.4 },  // A4
-      { freq: 554.37, delay: 0.08, duration: 1.5 },  // C#5
-      { freq: 659.25, delay: 0.16, duration: 1.6 },  // E5
-      { freq: 880.00, delay: 0.24, duration: 1.8 },  // A5
-      { freq: 1108.73, delay: 0.32, duration: 2.0 }, // C#6
+      { freq: 440.00, delay: 0.00, duration: 1.4 },
+      { freq: 554.37, delay: 0.08, duration: 1.5 },
+      { freq: 659.25, delay: 0.16, duration: 1.6 },
+      { freq: 880.00, delay: 0.24, duration: 1.8 },
+      { freq: 1108.73, delay: 0.32, duration: 2.0 },
     ];
 
     const masterGain = ctx.createGain();

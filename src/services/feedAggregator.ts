@@ -1,4 +1,4 @@
-import { FeedItem, CategoryType } from '../types/feed';
+import { FeedItem, CategoryType, TimeFilterType } from '../types/feed';
 import { SEED_FEEDS } from '../data/seedFeeds';
 import { fetchAllLiveRss } from './rssParser';
 
@@ -10,7 +10,7 @@ export async function getAggregatedFeeds(): Promise<FeedItem[]> {
       const existingTitles = new Set(liveItems.map(item => item.title.toLowerCase().trim()));
       const filteredSeed = SEED_FEEDS.filter(item => !existingTitles.has(item.title.toLowerCase().trim()));
       
-      // Combine live items with non-duplicated seed items
+      // Combine live items with non-duplicated rich seed items
       return [...liveItems, ...filteredSeed];
     }
   } catch (err) {
@@ -24,16 +24,26 @@ export async function getAggregatedFeeds(): Promise<FeedItem[]> {
 export function filterFeeds(
   feeds: FeedItem[],
   category: CategoryType,
-  searchQuery: string
+  searchQuery: string,
+  timeFilter: TimeFilterType = 'semua'
 ): FeedItem[] {
   let result = [...feeds];
 
-  // Category filter
+  // 1. Category filter
   if (category !== 'semua') {
     result = result.filter(item => item.category === category);
   }
 
-  // Search keyword filter across title, content, author, source, and badge
+  // 2. Time range filter (Rentang waktu sampai 1 minggu terakhir)
+  if (timeFilter === '24-jam') {
+    result = result.filter(item => item.daysAgo === undefined || item.daysAgo <= 1);
+  } else if (timeFilter === '3-hari') {
+    result = result.filter(item => item.daysAgo === undefined || item.daysAgo <= 3);
+  } else if (timeFilter === '1-minggu') {
+    result = result.filter(item => item.daysAgo === undefined || item.daysAgo <= 7);
+  }
+
+  // 3. Search keyword filter across title, content, author, source, and badge
   if (searchQuery.trim()) {
     const query = searchQuery.toLowerCase().trim();
     result = result.filter(item => 

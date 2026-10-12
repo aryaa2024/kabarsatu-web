@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { audioService } from '../services/audioService';
-import { Volume2, Sparkles, UserCheck, Play } from 'lucide-react';
+import { Sparkles, UserCheck, Volume2 } from 'lucide-react';
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -8,49 +8,26 @@ interface SplashScreenProps {
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
   const [fadingOut, setFadingOut] = useState(false);
-  const [soundPlayed, setSoundPlayed] = useState(false);
 
   useEffect(() => {
-    // Attempt audio playback immediately on load
-    const playIntro = async () => {
-      try {
-        const played = await audioService.playFuturisticChime();
-        if (played) setSoundPlayed(true);
-      } catch (err) {
-        console.log('Intro sound waiting for user gesture:', err);
-      }
-    };
-    playIntro();
+    // 1. Play the custom intro sound immediately on load
+    audioService.playFuturisticChime().catch(() => {});
 
-    // Smooth exit sequence after 2.4s to let the intro voiceover finish
+    // 2. Automatically transition directly to homepage (Beranda) after 2.0s - no click required!
     const timer = setTimeout(() => {
       setFadingOut(true);
       const exitTimer = setTimeout(() => {
         onComplete();
-      }, 500); // 500ms fade transition
+      }, 450); // Smooth 450ms fade transition into Beranda
       return () => clearTimeout(exitTimer);
-    }, 2400);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, [onComplete]);
 
-  const handleManualPlay = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    audioService.playFuturisticChime();
-    setSoundPlayed(true);
-  };
-
-  const handleScreenClick = () => {
-    // If sound hasn't played due to browser autoplay restriction, play it on user click
-    if (!soundPlayed) {
-      audioService.playFuturisticChime();
-    }
-    onComplete();
-  };
-
   return (
     <div
-      onClick={handleScreenClick}
+      onClick={onComplete} // Optional: clicking allows skipping earlier if desired
       className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-slateDark cursor-pointer transition-opacity duration-500 select-none ${
         fadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
@@ -59,10 +36,10 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
       <div className="absolute w-[450px] h-[450px] bg-electricBlue/15 rounded-full blur-[100px] pointer-events-none animate-pulse-subtle" />
 
       {/* Main Container */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-md mx-auto">
+      <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-md mx-auto pointer-events-none">
         {/* Logo Container with Subtle Pulse and Glow */}
         <div className="relative mb-6 group">
-          <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-blue-600 via-electricBlue to-cyan-400 opacity-60 blur-lg group-hover:opacity-100 transition duration-700 animate-pulse-subtle"></div>
+          <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-blue-600 via-electricBlue to-cyan-400 opacity-60 blur-lg transition duration-700 animate-pulse-subtle"></div>
           
           <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-darkCharcoal border border-subtleGray/70 flex items-center justify-center p-3 shadow-2xl overflow-hidden">
             <img
@@ -103,21 +80,13 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
 
         {/* Subtle Tech Loading Bar */}
         <div className="w-44 h-1 bg-subtleGray rounded-full mt-6 overflow-hidden">
-          <div className="w-full h-full bg-gradient-to-r from-electricBlue to-cyan-400 origin-left animate-[slideUp_2.4s_ease-in-out_infinite]" />
+          <div className="w-full h-full bg-gradient-to-r from-electricBlue to-cyan-400 origin-left animate-[slideUp_2.0s_ease-in-out]" />
         </div>
 
-        {/* Audio Status & Interactive Hint */}
-        <div className="mt-7 flex items-center gap-3 text-xs text-slateGray/80">
-          <button
-            onClick={handleManualPlay}
-            title="Dengarkan Suara Intro Buatan Anda"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-darkCharcoal border border-subtleGray hover:text-offWhite hover:border-electricBlue transition-all active:scale-95 shadow-sm"
-          >
-            <Volume2 className={`w-3.5 h-3.5 ${soundPlayed ? 'text-electricBlue animate-pulse' : 'text-slateGray'}`} />
-            <span className="font-medium">{soundPlayed ? 'Suara Intro Diputar 🔊' : 'Putar Suara Intro ▶'}</span>
-          </button>
-          <span>•</span>
-          <span className="hover:text-offWhite transition-colors">Klik untuk masuk</span>
+        {/* Status text */}
+        <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slateGray/75">
+          <Volume2 className="w-3.5 h-3.5 text-electricBlue animate-pulse" />
+          <span>Menyiapkan feed terpadu & memuat beranda...</span>
         </div>
       </div>
     </div>

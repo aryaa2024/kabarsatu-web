@@ -4,6 +4,7 @@ interface RSSSourceConfig {
   source: string;
   source_icon: string;
   feedUrl: string;
+  portalUrl: string;
   defaultBadge: string;
 }
 
@@ -12,60 +13,70 @@ export const RSS_SOURCES: RSSSourceConfig[] = [
     source: 'Kompas',
     source_icon: 'https://asset.kompas.com/data/2023/wp/images/favicon.ico',
     feedUrl: 'https://news.kompas.com/feed',
+    portalUrl: 'https://nasional.kompas.com',
     defaultBadge: 'Kompas News'
   },
   {
     source: 'Detik',
     source_icon: 'https://cdn.detik.net.id/assets/images/favicon.ico',
     feedUrl: 'https://rss.detik.com/index.php/detikcom',
+    portalUrl: 'https://news.detik.com/berita',
     defaultBadge: 'Detik Terkini'
   },
   {
     source: 'CNN Indonesia',
     source_icon: 'https://cdn.cnnindonesia.com/cnnindonesia/images/favicon.ico',
     feedUrl: 'https://www.cnnindonesia.com/nasional/rss',
+    portalUrl: 'https://www.cnnindonesia.com/nasional',
     defaultBadge: 'CNN Nasional'
   },
   {
     source: 'Tempo',
     source_icon: 'https://statik.tempo.co/images/favicon.ico',
     feedUrl: 'https://rss.tempo.co/nasional',
+    portalUrl: 'https://nasional.tempo.co',
     defaultBadge: 'Tempo Update'
   },
   {
     source: 'Antara',
     source_icon: 'https://www.antaranews.com/img/antaranews.png',
     feedUrl: 'https://www.antaranews.com/rss/terkini.xml',
+    portalUrl: 'https://www.antaranews.com/hukum',
     defaultBadge: 'Antara Terkini'
   },
   {
     source: 'Liputan6',
     source_icon: 'https://cdn.liputan6.com/assets/images/favicon.ico',
     feedUrl: 'https://www.liputan6.com/feed/rss',
+    portalUrl: 'https://www.liputan6.com/news',
     defaultBadge: 'Liputan6 Aktual'
   },
   {
     source: 'Merdeka',
     source_icon: 'https://cdns.klimg.com/merdeka.com/v2/i/favicon.ico',
     feedUrl: 'https://www.merdeka.com/feed',
+    portalUrl: 'https://www.merdeka.com/peristiwa',
     defaultBadge: 'Merdeka News'
   },
   {
     source: 'Republika',
     source_icon: 'https://static.republika.co.id/files/images/favicon.ico',
     feedUrl: 'https://www.republika.co.id/rss',
+    portalUrl: 'https://republika.co.id/kanal/news',
     defaultBadge: 'Republika News'
   },
   {
     source: 'Sindonews',
     source_icon: 'https://asset.sindonews.net/dyn/16/favicon.ico',
     feedUrl: 'https://nasional.sindonews.com/rss',
+    portalUrl: 'https://nasional.sindonews.com',
     defaultBadge: 'Sindo Nasional'
   },
   {
     source: 'Tribunnews',
     source_icon: 'https://t-2.tstatic.net/tribun/images/favicon.ico',
     feedUrl: 'https://www.tribunnews.com/rss',
+    portalUrl: 'https://www.tribunnews.com/nasional',
     defaultBadge: 'Tribun Terkini'
   }
 ];
@@ -176,13 +187,14 @@ export async function fetchLiveRssFeed(sourceConfig: RSSSourceConfig): Promise<F
         author: item.author || `Redaksi ${sourceConfig.source}`,
         timestamp: item.pubDate ? formatTimeAgo(new Date(item.pubDate)) : 'Baru saja',
         image_url: imageUrl,
-        original_link: item.link || item.guid || 'https://news.google.com',
+        original_link: item.link || item.guid || sourceConfig.portalUrl,
         category,
         readTime: '3 mnt baca',
         badge: sourceConfig.defaultBadge,
         likesCount: Math.floor(Math.random() * 250) + 40,
         commentsCount: Math.floor(Math.random() * 45) + 8,
-        mediaType: 'article'
+        mediaType: 'article',
+        daysAgo: 0
       };
     });
   } catch {
