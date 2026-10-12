@@ -3,6 +3,7 @@ import { SplashScreen } from './components/SplashScreen';
 import { Navbar } from './components/Navbar';
 import { CategoryBar } from './components/CategoryBar';
 import { NewsCard } from './components/NewsCard';
+import { ArticleModal } from './components/ArticleModal';
 import { BookmarkDrawer } from './components/BookmarkDrawer';
 import { LoginModal } from './components/LoginModal';
 import { Footer } from './components/Footer';
@@ -17,12 +18,15 @@ import {
   Clock, 
   Layers, 
   ChevronDown, 
-  SlidersHorizontal 
+  ShieldCheck
 } from 'lucide-react';
 
 export const App: React.FC = () => {
   // Splash Screen State
   const [showSplash, setShowSplash] = useState(true);
+
+  // Selected Article for In-App Reader Modal
+  const [selectedArticle, setSelectedArticle] = useState<FeedItem | null>(null);
 
   // Feeds State
   const [feeds, setFeeds] = useState<FeedItem[]>(SEED_FEEDS);
@@ -30,7 +34,7 @@ export const App: React.FC = () => {
   const [lastUpdated, setLastUpdated] = useState<string>('Baru saja');
   const [countdown, setCountdown] = useState<number>(60);
   
-  // Pagination / Load More limit (show 12 initially, +12 each load more)
+  // Pagination limit (show 12 initially)
   const [visibleCount, setVisibleCount] = useState<number>(12);
 
   // Filter & Search State
@@ -74,6 +78,19 @@ export const App: React.FC = () => {
       return () => clearTimeout(t);
     }
   }, [toastMessage]);
+
+  // Splash Screen Transition Callback
+  const handleSplashComplete = useCallback(() => {
+    setShowSplash(false);
+  }, []);
+
+  // Safety Timeout for Splash Screen (maximum 2.2 seconds)
+  useEffect(() => {
+    const safety = setTimeout(() => {
+      setShowSplash(false);
+    }, 2200);
+    return () => clearTimeout(safety);
+  }, []);
 
   // Bookmarks Hook
   const { 
@@ -128,7 +145,7 @@ export const App: React.FC = () => {
       setLastUpdated(timeStr);
       setCountdown(60);
       if (isManual) {
-        showToast('Feed berita & medsos berhasil disegarkan! ⚡');
+        showToast('Feed berita & medsos berhasil diperbarui! ⚡');
       }
     } catch (err) {
       console.error('Error loading feeds:', err);
@@ -199,9 +216,9 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slateDark text-offWhite flex flex-col font-sans selection:bg-electricBlue selection:text-white">
-      {/* 1. Splash Screen Intro (Auto-transitions to Beranda) */}
+      {/* 1. Splash Screen Intro (Transitions to Beranda without getting stuck) */}
       {showSplash && (
-        <SplashScreen onComplete={() => setShowSplash(false)} />
+        <SplashScreen onComplete={handleSplashComplete} />
       )}
 
       {/* 2. Top Navigation */}
@@ -251,6 +268,9 @@ export const App: React.FC = () => {
                   {timeFilter === '24-jam' ? '24 Jam Terakhir' : timeFilter === '3-hari' ? '3 Hari Terakhir' : '7 Hari Terakhir'}
                 </span>
               )}
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <ShieldCheck className="w-3 h-3" /> Filter Integritas Aktif
+              </span>
             </div>
             <p className="text-xs sm:text-sm text-slateGray mt-1">
               Menampilkan {displayedFeeds.length} kabar terverifikasi (arsip 1 minggu terakhir) dari 10 portal berita nasional terpercaya, YouTube & medsos
@@ -312,6 +332,7 @@ export const App: React.FC = () => {
                   item={feed}
                   isBookmarked={isBookmarked(feed.id)}
                   onToggleBookmark={handleToggleBookmarkItem}
+                  onSelectArticle={(item) => setSelectedArticle(item)}
                   onNotify={showToast}
                 />
               ))}
@@ -338,7 +359,17 @@ export const App: React.FC = () => {
 
       </main>
 
-      {/* 5. Drawers & Modals */}
+      {/* 5. In-App Article Detail Reader Modal */}
+      <ArticleModal
+        item={selectedArticle}
+        isOpen={Boolean(selectedArticle)}
+        onClose={() => setSelectedArticle(null)}
+        isBookmarked={selectedArticle ? isBookmarked(selectedArticle.id) : false}
+        onToggleBookmark={handleToggleBookmarkItem}
+        onNotify={showToast}
+      />
+
+      {/* 6. Drawers & Modals */}
       <BookmarkDrawer
         isOpen={isBookmarkOpen}
         onClose={() => setIsBookmarkOpen(false)}
@@ -357,7 +388,7 @@ export const App: React.FC = () => {
         onNotify={showToast}
       />
 
-      {/* 6. Floating Toast Notification */}
+      {/* 7. Floating Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-darkCharcoal border border-electricBlue text-offWhite text-xs sm:text-sm font-medium shadow-2xl animate-slide-up backdrop-blur-md">
           <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
@@ -365,7 +396,7 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      {/* 7. Footer Copyright */}
+      {/* 8. Footer Copyright */}
       <Footer />
     </div>
   );

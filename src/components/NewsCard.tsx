@@ -12,13 +12,15 @@ import {
   Eye, 
   Video,
   Send,
-  X
+  X,
+  BookOpen
 } from 'lucide-react';
 
 interface NewsCardProps {
   item: FeedItem;
   isBookmarked: boolean;
   onToggleBookmark: (item: FeedItem) => void;
+  onSelectArticle: (item: FeedItem) => void;
   onNotify?: (message: string) => void;
 }
 
@@ -26,6 +28,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   item,
   isBookmarked,
   onToggleBookmark,
+  onSelectArticle,
   onNotify
 }) => {
   const [copied, setCopied] = useState(false);
@@ -85,14 +88,13 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   };
 
   return (
-    <article className="group flex flex-col justify-between bg-darkCharcoal border border-subtleGray rounded-2xl overflow-hidden hover:border-electricBlue/70 hover:shadow-xl hover:shadow-electricBlue/10 transition-all duration-300 hover:-translate-y-1">
+    <article 
+      onClick={() => onSelectArticle(item)}
+      className="group flex flex-col justify-between bg-darkCharcoal border border-subtleGray rounded-2xl overflow-hidden hover:border-electricBlue/70 hover:shadow-xl hover:shadow-electricBlue/10 transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+    >
       {/* Top Image / Media Container */}
-      <a
-        href={item.original_link}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="relative aspect-video w-full overflow-hidden bg-slateDark block cursor-pointer"
-        title="Klik untuk membuka tautan asli di tab baru"
+      <div
+        className="relative aspect-video w-full overflow-hidden bg-slateDark block"
       >
         <img
           src={item.image_url}
@@ -133,7 +135,13 @@ export const NewsCard: React.FC<NewsCardProps> = ({
             </div>
           </div>
         )}
-      </a>
+
+        {/* Read Article Overlay Hint on Hover */}
+        <div className="absolute inset-0 bg-slateDark/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-offWhite text-xs font-bold">
+          <BookOpen className="w-4 h-4 text-electricBlue" />
+          <span>Klik untuk Baca Artikel Penuh</span>
+        </div>
+      </div>
 
       {/* Body Content */}
       <div className="p-5 flex-1 flex flex-col justify-between">
@@ -152,15 +160,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
           {/* Title */}
           <h2 className="text-base sm:text-lg font-bold text-offWhite leading-snug line-clamp-2 mb-2 group-hover:text-electricBlue-light transition-colors">
-            <a
-              href={item.original_link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:underline focus:outline-none"
-              title="Buka artikel asli"
-            >
-              {item.title}
-            </a>
+            {item.title}
           </h2>
 
           {/* Excerpt / Summary */}
@@ -171,11 +171,17 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
         {/* Interactive Comments Drawer/Accordion */}
         {showCommentBox && (
-          <div className="mt-3 p-3 rounded-xl bg-slateDark border border-subtleGray/80 animate-fade-in text-xs">
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="mt-3 p-3 rounded-xl bg-slateDark border border-subtleGray/80 animate-fade-in text-xs"
+          >
             <div className="flex items-center justify-between mb-2">
               <span className="font-semibold text-offWhite">Komentar & Opini Publik:</span>
               <button 
-                onClick={() => setShowCommentBox(false)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowCommentBox(false);
+                }}
                 className="text-slateGray hover:text-offWhite"
               >
                 <X className="w-3.5 h-3.5" />
@@ -230,7 +236,10 @@ export const NewsCard: React.FC<NewsCardProps> = ({
             </button>
 
             <button
-              onClick={() => setShowCommentBox(prev => !prev)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowCommentBox(prev => !prev);
+              }}
               className="flex items-center gap-1 hover:text-offWhite transition-colors"
               title="Buka Komentar"
             >
@@ -245,8 +254,8 @@ export const NewsCard: React.FC<NewsCardProps> = ({
             )}
           </div>
 
-          {/* Action Buttons: Share, Bookmark, Read Link */}
-          <div className="flex items-center gap-1.5">
+          {/* Action Buttons: Share, Bookmark, Read Modal, External Link */}
+          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
             {/* Share Button */}
             <button
               onClick={handleShare}
@@ -276,15 +285,28 @@ export const NewsCard: React.FC<NewsCardProps> = ({
               <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current text-amber-400' : ''}`} />
             </button>
 
-            {/* Read External Link Button */}
+            {/* Read Article in App Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectArticle(item);
+              }}
+              title="Baca Artikel Lengkap"
+              className="p-1.5 rounded-lg bg-electricBlue/10 hover:bg-electricBlue text-electricBlue hover:text-white border border-electricBlue/30 transition-all flex items-center justify-center active:scale-95"
+            >
+              <BookOpen className="w-4 h-4" />
+            </button>
+
+            {/* Direct External Link */}
             <a
               href={item.original_link}
               target="_blank"
               rel="noopener noreferrer"
-              title="Buka Artikel Asli di Tab Baru"
-              className="ml-1 p-1.5 rounded-lg bg-electricBlue/10 hover:bg-electricBlue text-electricBlue hover:text-white border border-electricBlue/30 transition-all flex items-center justify-center active:scale-95"
+              onClick={(e) => e.stopPropagation()}
+              title="Kunjungi Website Portal Sumber"
+              className="p-1.5 rounded-lg text-slateGray hover:text-offWhite hover:bg-slateDark border border-transparent hover:border-subtleGray transition-all flex items-center justify-center active:scale-95"
             >
-              <ExternalLink className="w-4 h-4" />
+              <ExternalLink className="w-3.5 h-3.5" />
             </a>
           </div>
         </div>

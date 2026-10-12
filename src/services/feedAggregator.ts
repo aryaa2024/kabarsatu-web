@@ -2,23 +2,57 @@ import { FeedItem, CategoryType, TimeFilterType } from '../types/feed';
 import { SEED_FEEDS } from '../data/seedFeeds';
 import { fetchAllLiveRss } from './rssParser';
 
+/**
+ * Quality-Check & Content Integrity Filter:
+ * Ensures only articles with complete headlines, substantial readable content,
+ * valid sources, and functional media links are displayed in KabarSatu.
+ */
+export function validateFeedItem(item: FeedItem): boolean {
+  if (!item) return false;
+
+  // 1. Must have a valid, meaningful headline (min 8 characters)
+  if (!item.title || item.title.trim().length < 8) return false;
+
+  // 2. Must have substantial summary content (min 25 characters)
+  if (!item.content || item.content.trim().length < 25) return false;
+
+  // 3. Must have a reputable source name
+  if (!item.source || item.source.trim().length < 2) return false;
+
+  // 4. Must have a valid image URL
+  if (!item.image_url || (!item.image_url.startsWith('http') && !item.image_url.startsWith('/'))) {
+    return false;
+  }
+
+  // 5. Must have a valid destination URL
+  if (!item.original_link || !item.original_link.startsWith('http')) {
+    return false;
+  }
+
+  return true;
+}
+
 export async function getAggregatedFeeds(): Promise<FeedItem[]> {
   try {
     const liveItems = await fetchAllLiveRss();
-    if (liveItems && liveItems.length > 0) {
-      // De-duplicate by title
-      const existingTitles = new Set(liveItems.map(item => item.title.toLowerCase().trim()));
-      const filteredSeed = SEED_FEEDS.filter(item => !existingTitles.has(item.title.toLowerCase().trim()));
+    
+    // Filter live items with strict validation check
+    const validLiveItems = liveItems.filter(validateFeedItem);
+
+    if (validLiveItems && validLiveItems.length > 0) {
+      const existingTitles = new Set(validLiveItems.map(item => item.title.toLowerCase().trim()));
+      const filteredSeed = SEED_FEEDS.filter(item => 
+        validateFeedItem(item) && !existingTitles.has(item.title.toLowerCase().trim())
+      );
       
-      // Combine live items with non-duplicated rich seed items
-      return [...liveItems, ...filteredSeed];
+      return [...validLiveItems, ...filteredSeed];
     }
   } catch (err) {
     console.log('Using robust curated seed data:', err);
   }
 
-  // Fallback to complete seed dataset
-  return SEED_FEEDS;
+  // Fallback to validated seed dataset
+  return SEED_FEEDS.filter(validateFeedItem);
 }
 
 export function filterFeeds(
@@ -27,7 +61,8 @@ export function filterFeeds(
   searchQuery: string,
   timeFilter: TimeFilterType = 'semua'
 ): FeedItem[] {
-  let result = [...feeds];
+  // Always ensure only validated articles are processed
+  let result = feeds.filter(validateFeedItem);
 
   // 1. Category filter
   if (category !== 'semua') {

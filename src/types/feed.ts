@@ -14,6 +14,7 @@ export interface FeedItem {
   source_icon: string;         // Favicon / Icon URL
   title: string;               // Headline or post title
   content: string;             // Summary / post content
+  full_article?: string[];     // Full article paragraphs for in-app reader modal
   author: string;              // Journalist or username
   timestamp: string;           // E.g., '15 menit lalu', '2 hari lalu', '1 minggu lalu'
   image_url: string;           // Media thumbnail
@@ -26,6 +27,7 @@ export interface FeedItem {
   badge?: string;              // E.g. 'Investigasi', 'Densus 88', 'KPK', 'Viral'
   mediaType?: 'article' | 'video' | 'social_post';
   daysAgo?: number;            // 0 = today, 1 = 1 day ago, 2 = 2 days ago, ... up to 7
+  isValidated?: boolean;       // Quality-check validation flag
 }
 
 export interface UserProfile {
